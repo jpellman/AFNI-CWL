@@ -1,0 +1,12 @@
+
+    
+    Usage:
+      @afni_refacer_make_onebigA12 T1w-dataset-name
+    
+    * This script takes as input a single T1w dataset, and
+       produces a version aligned to the MNI template and also
+       expanded to a 'big' grid.
+    * This script is used by @afni_refacer_make_master and
+       there is no good reason for you to run this script yourself.
+    
+    Author - The Face of Imperial Zhark, Who is Terrible to Behold!

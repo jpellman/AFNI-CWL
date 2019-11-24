@@ -1,0 +1,199 @@
+
+    
+      This program examines whether an input dset is ready-to-go for
+      running FreeSurfer's (FS's) "recon-all".  The dataset in this case
+      is typically an anatomical volume.  This applies to (at least) FS
+      versions 5.* and 6.*.
+    
+      We have found that there are a number of unofficial properties that
+      a dset should have in order for all of the the FS outputs to align
+      well with the input dset.  These include:
+         + having isotropic voxel dimensions
+         + having matrix dimensions that are all even
+         + having voxels sizes in a range 0.5-1.0 mm.
+           - and note that for sub-millimeter voxels, you might have to
+             use the "-hires" option in FS's recon-all; please see their
+             documentation, such as:
+               https://surfer.nmr.mgh.harvard.edu/fswiki/SubmillimeterRecon
+             for more information about this point.
+    
+      NB: 'recon-all' is a program that we find helpful and use a lot, but
+          we are *not* its developers, so this program should be viewed as
+          an potentially helpful guide, but not a be-all and end-all to
+          running it.  Please see FreeSurfer documentation for more
+          information about using it, including options, other quality
+          control, etc.
+    
+      Ver  : 1.2
+      Date : Oct 23, 2019
+    
+    
+
+INPUTS
+======
+
+.. code-block:: none
+
+    
+        + An anatomical dset, which the user wants to put into FS's
+          "recon-all" program (and likely bring into the AFNI/SUMA realm
+          thereafter with AFNI's "@SUMA_Make_Spec_FS").
+    
+    
+
+OUTPUTS
+=======
+
+.. code-block:: none
+
+    
+        + At its most basic functioning, this program outputs a True/False
+          (= 1/0, respectively) response to this question: 
+    
+             Is the input dset ready for use in FS's "recon-all" program?
+    
+          This is evaluated with several empirical criteria that we have
+          found useful in order for the output results to overlap well
+          with the input.  The user can output the check results in a more
+          "verbose" manner, too, seeing a breakdown of the information in
+          more detail.
+    
+        See the "NOTES" (below) for recommendations on what to do if your
+        dset fails the FS/recon-all safety check.
+    
+    
+
+RUNNING
+=======
+
+.. code-block:: none
+
+    
+      -input               : (req) input file name
+    
+      -verbose             : output colon-separated table of info, including:
+                              dset information (voxel size and matrix dims);
+                              results of individual criteria; utilized tolerance
+                              values; and the overall evaluation.
+                              With this option, all criteria are displayed.
+                              (def: just output a 1 or 0 for 'pass' or 'fail',
+                               respectively)
+    
+      -verb                : hip slang for '-verbose'
+    
+      -is_mat_even         : output contains the result of this test (can be
+                              combined with others for final omnibus):
+                                is each matrix dimension even?
+      -is_vox_iso          : output contains the result of this test (can be
+                              combined with others for final omnibus):
+                                is the voxel size isotropic (within tolerance)?
+    
+      -is_vox_1mm_max      : output contains the result of this test (can be
+                              combined with others for final omnibus):
+                                is each voxel edge <1 mm (within tolerance)?
+    
+      -is_vox_05mm_min     : output contains the result of this test (can be
+                              combined with others for final omnibus):
+                                is each voxel edge >0.5 mm (within tolerance)?
+    
+      -check_all           : Specify that *all* currently available criteria
+                              should be employed.  This option should be 
+                              unnecessary to use, because this is in fact default
+                              behavior of the program. 
+    
+      -eps_iso             : specify tolerance for defining isotropy of voxels;
+                              since the values are floating point numbers, exact
+                              equality is not tested, but instead pairwise checks
+                              of: 
+                                  abs(dx - dy) < eps_iso,
+                              etc., are made. (def: eps_iso = 0.01)
+    
+      -eps_size            : specify tolerance for defining size of
+                              voxels; as noted above, exact equality is
+                              not tested, but instead pairwise checks of:
+                                  dx < 1 + eps_size, 
+                                  dx > 0.5 - eps_size,
+                              etc., are made. (def: eps_size = 0.01)
+    
+      -help                : display program help in terminal (consider
+                             '-hview' to open help in a separate text editor)
+      -ver                 : display program version number in terminal 
+      -date                : display date of program's last update in terminal 
+    
+    
+
+NOTES
+=====
+
+.. code-block:: none
+
+    
+      If your dset fails the check (i.e., a 0 is returned by the program),
+      what can you do to "fix" your dset?  Well, it depends what aspect of
+      the check failed (which can be seen in detail by running with
+      '-verb' or '-verbose'.  Here we provide a table of suggestions.
+                                
+      "Are voxels isotropic" 
+          Consider resampling the data.  In order to introduce a minimal
+          amount smoothing, use the wsinc5 interpolation kernel. Consider
+          the following example (note that 'IDENTITY' is actually a
+          keyword to use; the DSET and NEW_NAME would be replaced for your
+          darling dset):
+                          3dAllineate                    \
+                              -1Dmatrix_apply  IDENTITY  \
+                              -mast_dxyz       1         \
+                              -final           wsinc5    \
+                              -source          DSET      \
+                              -prefix          NEW_NAME
+    
+      "Are voxels 1.0 mm (max)"
+          Resample; basically the same command as the solution to "Are
+          voxels isotropic" woes.
+    
+      "Are voxels 0.5 mm (min)"
+          Resample; basically the same command as the solution to "Are
+          voxels isotropic" woes (maybe using a different '-mast_dxyz ..'
+          size, since you must have put in some mighty effort to get
+          voxels of such a high resolution).
+          Note that if you have very small voxels still, you might 
+          need to use the "-hires" option in recon-all;  please check
+          FS documentation for more about this.
+    
+      "Are matrix dims even"  
+          Use 3dZeropad to add or subtract slices.  That program's new
+          option '-pad2evens' makes this process pretty automatic:
+                          3dZeropad                      \
+                              -pad2evens                 \
+                              -prefix          NEW_NAME  \
+                              DSET
+    
+      NB: if several criteria are failing, you might want to consider
+      solving the voxel-sized ones (isotropy, over/undersizedness)
+      *first*, because the resampling there might change the matrix
+      dimensions.
+    
+      More criteria may be added over time.  Who knows?
+    
+    
+
+EXAMPLES
+========
+
+.. code-block:: none
+
+    
+        # 1. Vanilla mode.  Output is just a number: 1 (pass) or 0 (fail).
+                 check_dset_for_fs.py  -input DSET
+            
+        # 2. Spicier mode.  Output is a table of values and criteria; the 
+        #    'omnibus' line carries the final evaluation.
+                 check_dset_for_fs.py  -input DSET -verbose
+    
+        # 3. Mirchi mode.  Check just a subset of criteria AND control the 
+        #    fineness of the test tolerance.
+                 check_dset_for_fs.py  \
+                     -input DSET       \
+                     -eps_iso 0.001    \
+                     -is_vox_iso       \
+                     -verb
+    

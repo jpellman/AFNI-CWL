@@ -1,0 +1,14 @@
+
+       Installs the D99 macaque atlas described
+       in:
+           "Three-dimensional digital template atlas of the macaque brain"
+           Reveley, Gruslys, Ye, Samaha, Glen, Russ, Saad, Seth, Leopold, Saleem,
+           Cerebral Cortex, 2016, in press
+       
+       After the archive is downloaded and unpacked, see its README.txt
+       for details.
+       Options:
+       [-wget]: Use wget to download archive. Script chooses by default
+                with preference for curl
+       [-curl]: Use curl to download archive. Script chooses by default
+                with preference for curl

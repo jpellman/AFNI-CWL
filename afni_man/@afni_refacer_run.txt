@@ -1,0 +1,23 @@
+
+    
+    Usage:
+      @afni_refacer_run [-deface] T1w-dataset-name
+    
+    * This script re-faces one input dataset, using a master shell dataset to
+       write over the subject's 'face' region.
+    * The single command line argument is the name of a T1-weighted dataset.
+    * This script has no options.
+    * This is NOT a 'defacer' since it replaces the face instead of removing it!
+    * This script relies on two datasets that are included with AFNI binaries:
+        MNI152_2009_template_SSW.nii.gz = MNI skull strip/warp template
+        afni_refacer_shell.nii.gz       = dataset to replace face region
+      The latter dataset was made with the script @afni_refacer_make_master.
+    * NOTE: Here 'face' also includes part of the skull,
+            so the head will be reshaped and the ears replaced.
+    
+    OPTION:
+    -------
+     -deface   = Replace the computed 'face' voxels with all zeros instead
+                 of the artificial face.
+    
+    Author - The Face of Imperial Zhark, Who is Terrible to Behold!

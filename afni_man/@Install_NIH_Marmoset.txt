@@ -1,0 +1,13 @@
+
+         Installs the NIH marmoset template and atlases described
+         in:
+             "Marmoset template"
+             Cirong Liu, et al, submitted
+         
+         After the archive is downloaded and unpacked, see its README.txt
+         for details.
+         Options:
+         [-wget]: Use wget to download archive. Script chooses by default
+                  with preference for curl
+         [-curl]: Use curl to download archive. Script chooses by default
+                  with preference for curl

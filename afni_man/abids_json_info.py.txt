@@ -1,0 +1,55 @@
+
+    
+        This program extracts info from BIDS formatted json files created
+        with dcm2niix_afni or dcm2niix. This is mostly for internal use as a
+        python library. It will also extract fields from any json formatted file.
+    
+
+Caveats
+=======
+
+.. code-block:: none
+
+    
+        This assumes that the json file was converted from dicoms using
+        dcm2niix_afni or dcm2niix with the -b (BIDS) option. So a json file and
+        matching dataset should be present.
+    
+
+Example
+=======
+
+.. code-block:: none
+
+    
+        abids_json_info.py -TR -json my_bids_fmri.json
+    
+    
+
+Options
+=======
+
+.. code-block:: none
+
+    
+    Required arguments:
+      -json JSON [JSON ...]
+                            Specify .json file(s).
+    
+    BIDS specific arguments:
+      -TR                   Print the TR from the json file in seconds, from the
+                            "RepetitionTime" field.
+      -TE                   Print out the "EchoTime" field in milliseconds (the
+                            json file stores it in seconds)
+      -TE_sec               Print the "EchoTime" field in seconds
+      -match_nii            Is there a .nii or .nii.gz file that matches the .json
+                            file? (1 if the dataset is loadable)
+    
+    Optional arguments:
+      -field STR [STR ...]  Print any field or list of fields from the json file.
+      -list_fields          Print a list of the available fields from the .json
+                            file. (This must be the only argument specified)
+      -help                 Show this help and exit.
+    
+    Justin Rajendra circa 05/2018
+    Keep on keeping on!

@@ -1,0 +1,225 @@
+
+    
+      Usage: 3dMEPFM [options]
+      ------
+    
+      Brief summary:
+      ==============
+      * 3dMEPFM is the equivalent program to 3dPFM for Multiecho fMRI data. This program 
+        performs the voxelwise deconvolution of ME-fMRI data to yield time-varying estimates 
+        of the changes in the transverse relaxation (DR2*) and, optionally, the net magnetization
+        (DS0) assuming a mono-exponential decay model of the signal, i.e. linear dependence of
+        the BOLD signal on the echo time (TE).
+    
+      * It is also recommended to read the help of 3dPFM to understand its functionality.
+      
+      * The ideas behind 3dMEPFM are described in the following papers:
+          
+       - For a comprehensive description of the algorithm, based on a model that
+         only considers fluctuations in R2* (DR2*) and thus only estimates DR2*
+         (i.e. this model is selected with option -R2only), see:
+    
+            C Caballero-Gaudes, S Moia, P. Panwar, PA Bandettini, J Gonzalez-Castillo
+            A deconvolution algorithm for multiecho functional MRI: Multiecho Sparse Paradigm Free Mapping
+            (submitted to Neuroimage)
+    
+       - For a model that considers both fluctuations in the net magnetization (DS0) and R2*,
+         but only imposes a regularization term on DR2* (setting -rho 0 and without -R2only), 
+         see
+    
+            C Caballero-Gaudes, PA Bandettini, J Gonzalez-Castillo
+            A temporal deconvolution algorithm for multiecho functional MRI
+            2018 IEEE 15th International Symposium on Biomedical Imaging (ISBI 2018)
+            https://ieeexplore.ieee.org/document/8363649
+         
+       - For a model that considers both fluctuations in the net magnetization (DS0) and R2*,
+         and imposes regularization terms on DR2* and DS0 (i.e. setting rho > 0, and without -R2only),
+         see
+    
+         The results of this paper were obtained with rho = 0.5
+            
+            C Caballero-Gaudes, S. Moia, PA Bandettini, J Gonzalez-Castillo
+            Quantitative deconvolution of fMRI data with Multi-echo Sparse Paradigm Free Mapping
+            Medical Image Computing and Computer Assisted Intervention (MICCAI 2018)
+            Lecture Notes in Computer Science, vol. 11072. Springer
+            https://doi.org/10.1007/978-3-030-00931-1_36
+        
+      * IMPORTANT. This program is written in R. Please follow the guidelines in
+    
+            http://afni.nimh.nih.gov/sscc/gangc/Rinstall.html
+    
+        to install R and make AFNI compatible with R. Particularly, the "snow" library 
+        must be installed for parallelization across CPU nodes. 
+    
+           install.packages("snow",dependencies=TRUE)
+    
+        In addition, you need to install the following libraries with dependencies:
+    
+           install.packages("abind",dependencies=TRUE)
+           install.packages("lars",dependencies=TRUE)
+           install.packages("wavethresh",dependencies=TRUE)
+    
+        Also, if you want to run the program with the options "rho > 0", you must install
+        the R package of the generalized lasso (https://projecteuclid.org/euclid.aos/1304514656)  
+        This package was removed from CRAN repository, but the source code is available in:
+    
+           https://github.com/glmgen/genlasso
+      
+    
+      Example usage with a dataset with 3 echoes:
+      -----------------------------------------------------------------------------
+      3dMEPFM  -input data_TE1.nii 0.015      
+               -input data_TE2.nii 0.030      
+               -input data_TE3.nii 0.045      
+               -mask mask.nii                 
+               -criteria bic                  
+               -hrf SPMG1                     
+               -jobs 1                        
+    
+      
+    
+    Options:
+    --------
+    
+       -input DSET TE                       
+          DSET: Dataset to analyze with Multiecho Paradigm Free Mapping.      
+          and the corresponding TE. DSET can be any of the formats available  
+          in AFNI, e.g: -input Data+orig                                      
+          TE: echo time of dataset in seconds                                 
+          Also .1D files where each column is a voxel timecourse.             
+          If an .1D file is input, you MUST specify the TR with option -TR.   
+    
+       -mask MASK: Process voxels inside this mask only. Default is no masking. 
+    
+       -penalty PEN:  Regularization term (a.k.a. penalty) for DR2 & DS0        
+          * Available options for PEN are:                                    
+              lasso:            LASSO (i.e. L1-norm)                          
+          * If you are interested in other penalties (e.g. ridge regression,  
+            fused lasso, elastic net), contact c.caballero@bcbl.eu            
+    
+       -criteria CRIT:  Model selection of the regularization parameter.        
+          * Available options are:                                            
+              bic:  Bayesian Information Criterion (default)                  
+              aic:  Akaike Information Criterion                              
+              mad:  Regularization parameter is selected as the iteration     
+                    that makes the standard deviation of the residuals to be  
+                    larger than factor_MAD * sigma_MAD, where sigma_MAD is    
+                     the MAD estimate of the noise standard deviation         
+                     (after wavelet decomposition of the echo signals)        
+              mad2: Regularization parameter is selected so that              
+                     the standard deviation of the residuals is the closest   
+                     to factor_MAD*sigma_MAD.                                 
+          * If you want other options, contact c.caballero@bcbl.eu            
+    
+       -maxiterfactor MaxIterFactor (between 0 and 1):                          
+          * Maximum number of iterations for the computation of the           
+            regularization path will be 2*MaxIerFactor*nscans                 
+          * Default value is MaxIterFactor = 1                                
+    
+       -TR tr:  Repetition time or sampling period of the input data            
+          * It is required for the generation of the deconvolution HRF model. 
+          * If input datasets are .1D file, TR must be specified in seconds.  
+            If TR is not given, the program will STOP.                        
+          * If input datasets are 3D+time volumes and TR is NOT given,        
+            the value of TR is taken from the dataset header.                 
+          * If TR is specified and it is different from the TR in the header  
+            of the input datasets, the program will STOP.                     
+    
+       -hrf fhrf:   haemodynamic response function used for deconvolution       
+          *  fhrf can be any of the HRF models available in 3dDeconvolve.     
+          http://afni.nimh.nih.gov/pub/dist/doc/program_help/3dDeconvolve.html
+          i.e. 3dMEPFM calls 3dDeconvolve with options -x1D_stop & -nodata    
+          to create the HRF with onset at 0 (i.e. -stim_time 1 '1D:0' fhrf )  
+          *  [Default] fhrf == 'GAM', the 1 parameter gamma variate  
+                          (t/(p*q))^p * exp(p-t/q)                            
+                         with p=8.6 q=0.547 if only 'GAM' is used             
+                      ** The peak of 'GAM(p,q)' is at time p*q after          
+                         the stimulus.  The FWHM is about 2.3*sqrt(p)*q.      
+          *  Another option is fhrf == 'SPMG1', the SPM canonical HRF.        
+          *  If fhrf is a .1D, the program will use it as the HRF model.      
+                 ** It should be generated with the same TR as the input data 
+                    to get sensible results (i.e. know what you are doing).   
+                 ** fhrf must be column or row vector, i.e. only 1 hrf allowed.
+          * The HRF is normalized to maximum absolute amplitude equal to 1.   
+    
+       -R2only:                                                                 
+          * If this option is given, the model will only consider R2* changes 
+            and do not estimate S0 changes.                                   
+    
+       -rho:    0 <= rho <= 1 (default 0):                                      
+          * Parameter that balances the penalization of the DS0 (rho) and     
+            DR2star (1-rho) coefficients.                                     
+          * Default is rho = 0, i.e. no penalization of DS0 coefficients.     
+          * It becomes irrelevant with -R2only option.                        
+    
+       -factor_min_lambda  value >= 0      (default factor_min_lambda = 0.1):   
+          * Stop the computation of the regularization path when              
+            lambda <= factor_min_lambda*sigma_MAD, where sigma_MAD is the     
+             estimate of the standard deviation of the noise (computed after  
+             wavelet decomposition). It must be equal to or larger than 0.    
+    
+       -factor_MAD        (default factor_MAD = 1):                             
+          *  For criteria 'mad', select lambda so that the standard deviation 
+             of residuals is approximately equal to factor_MAD*sigma_MAD      
+    
+       -debias_TEopt: 0 <= debias_TEopt <= number of input datasets             
+          * For debiasing, only consider the 'debias_TEopt' input dataset,    
+            i.e. if debias_TEopt=2, the dataset corresponding to the second   
+            TE will beused for debiasing. This option is available in case    
+            you really know that one of the echoes is the 'optimal' TE  ...   
+            As if this information was easy to know and match :)              
+          * Default is debias_TEopt = 0, i.e. all echoes will be considered.  
+          * This option is not recommended unless you understand it,          
+            (i.e. use at your own risk)                                       
+    
+       -do_prior_debias:                                                        
+          * If this option is given, the algorithm will perform debiasing     
+            before the selection of the regularization parameter.             
+          * This option is not recommended unless you understand it,          
+            (i.e. use at your own risk)                                       
+    
+       -n_selection_Nscans:                                                     
+          * The equation for model selection for selection of regularization  
+            parameter with the 'bic' and 'aic' criteria depends on the number 
+            of observations (i.e. number of scans * number of echoes)         
+          * If -n_selection_Nscans is given, the formula will assume that     
+            the number of observations is the number of scans. This is        
+            mathematically wrong, but who cares if it gives better results!!  
+          * This option is not recommended unless you understand it,          
+            (i.e. use at your own risk)                                       
+    
+       -prefix                                                                  
+          * The names of the output volumes will be generated automatically   
+            as outputname_prefix_input, e.g. if -input = TheEmperor+orig,     
+            and prefix is Zhark, the names of the DR2 output volumes is       
+                  DR2_Zhark_TheEmperor+orig for  volume                       
+            whereas if prefix is not given, the output will be                
+                  DR2_TheEmperor+orig.                                        
+          * The program will automatically save the following volumes:        
+            -DR2      Changes in R2* parameter, which is assumed to           
+                      represent neuronal-related signal changes.              
+            -DR2fit   Convolution of DR2 with HRF, i.e. neuronal-related      
+                      haemodynamic signal. One volume per echo is created.    
+            -DS0      Changes in net magnetization (S0) (if estimated)        
+            -lambda   Regularization parameter                                
+            -sigmas_MAD  Estimate of the noise standard deviation after       
+                        wavelet decomposition for each input dataset          
+            -costs      Cost function to select the regularization parameter  
+                        (lambda) according to selection criterion             
+          * If you don't want to delete or rename anyone, you can always      
+            delete them later or rename them with 3dcopy.                     
+    
+       -jobs NJOBS: On a multi-processor machine, parallel computing will       
+                  speed up the program significantly.                         
+                  Choose 1 for a single-processor computer (DEFAULT).         
+    
+       -nSeg XX: Divide into nSeg segments of voxels to report progress,        
+               e.g. nSeg 5 will report every 20% of proccesed voxels.         
+               Default = 10                                                   
+    
+       -verb VERB: VERB is an integer specifying verbosity level.
+                 0 for quiet, 1 (default) or more: talkative.
+    
+       -help: this help message
+    
+       -show_allowed_options: list of allowed options

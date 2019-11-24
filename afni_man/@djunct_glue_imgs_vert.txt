@@ -1,0 +1,25 @@
+
+    
+    More helpful helpfile description coming (some day...)
+    
+    This is just a helper script for other things: glue two images
+    together vertically.
+    
+    written by PA Taylor, modelled heavily on RW Cox's '@snapshot_volreg'
+    script
+    
+    # --------------------------------------------------------------------
+    
+
+COMMAND OPTIONS
+===============
+
+.. code-block:: none
+
+    
+    -hview
+    -help
+    -ver
+    -imbot
+    -imtop
+    -prefix

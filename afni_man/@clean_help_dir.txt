@@ -1,0 +1,6 @@
+
+    
+    @clean_help_dir is a script to cleanup your /home/afniHQ/.afni/help directory.
+    It deletes older help files that differ little from the latest version.
+    
+    Ziad S. Saad   saadz@mail.nih.gov

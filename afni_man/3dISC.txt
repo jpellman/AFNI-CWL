@@ -1,0 +1,393 @@
+
+    
+                 ================== Welcome to 3dISC ==================          
+           Program for Voxelwise Inter-Subject Correlation (ISC) Analysis
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    Version 0.0.3, Aug 11, 2019
+    Author: Gang Chen (gangchen@mail.nih.gov)
+    Website - ATM
+    SSCC/NIMH, National Institutes of Health, Bethesda MD 20892, USA
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+    Introduction
+    ------
+     
+     Intersubject correlation (ISC) measures the extent of BOLD response similarity
+     or synchronization between two subjects who are scanned under the same
+     experience such as movie watching, music learning, etc. The program performs
+     voxelwise analysis with linear mixed-effects modeling that is laid out in the
+     following paper:
+    
+     Chen, G., Taylor, P.A., Shin, Y.W., Reynolds, R.C., Cox, R.W., 2017. Untangling
+     the Relatedness among Correlations, Part II: Inter-Subject Correlation Group
+     Analysis through Linear Mixed-Effects Modeling. Neuroimage 147:825-840.
+    
+     Input files for 3dISC are voxelwise correlation values from all subject pairs.
+     If they are not Fisher-transformed, use option -r2z in 3dISC to transform the
+     data. If there are two or more groups of subjects, ISCs across groups are also
+     required as input unless the data are analyzed for each group separately. 
+     Input files can be in AFNI, NIfTI or surface (niml.dset) format. In other words,
+     with totally n subjects, you should provide n(n-1)/2 input files (no duplicates
+     allowed). Currently 3dISC provides in the output the effect estimate (e.g., ISC
+     value) and the corresponding t-statistic at each voxel.
+    
+     For data preprocessing, you may consider the steps discussed in Appendix B of
+     the above paper. 3dTcorrelate in AFNI can be utilized to compute the voxelwise
+     ISC of time series between any two subjects.
+    
+     The LME platform allows for the incorporation of various types of explanatory
+     variables including categorical (between- and within-subject factors) and
+     quantitative variables (e.g., age, behavioral data). The burden of properly
+     specifying the weights for each effect (e.g., contrast) is unfortunately 
+     placed on the user's shoulder, and sorting out the number and order of 
+     predictors (regressors) can be overwhelming especially when there are more 
+     than two factor levels or when an interaction effect is involved. So, 
+     familiarize yourself with the details of the two popular factor coding 
+     strageties (dummy and deviation coding):
+     https://stats.idre.ucla.edu/r/library/r-library-contrast-coding-systems-for-categorical-variables/
+    
+     The four exemplifying scripts below are good demonstrations.More examples will
+     be added in the future if I could crowdsource more scenarios from the users
+     (including you the reader). In case you find one or two of them that
+     are similar to your data structure, use the example(s) as a template and then
+     build up your own script.
+     
+     In addition to R installtion, the following R packages need to be installed
+     first before running 3dISC: "lme4" and "snow". To install these packages, 
+     run the following command at the terminal:
+    
+     rPkgsInstall -pkgs "lme4,snow"
+    
+     Alternatively you may install them in R:
+     
+     install.packages("lme4")
+     install.packages("snow") 
+    
+     Once the 3dISC command script is constructed, it can be run by copying and
+     pasting to the terminal. Alternatively (and probably better) you save the 
+     script as a text file, for example, called ISC.txt, and execute it with the 
+     following (assuming on tc shell),
+     
+     nohup tcsh -x ISC.txt &
+     
+     or,
+     
+     nohup tcsh -x ISC.txt > diary.txt &
+     nohup tcsh -x ISC.txt |& tee diary.txt &
+    
+     The advantage of the latter commands is that the progression is saved into
+     the text file diary.txt and, if anything goes awry, can be examined later.
+    
+    Example 1 --- Simplest case: ISC analysis for one group of subjects without
+      any explanatory variables. In other words, the effect of interest is the ISC
+      at the populaton level. The output is the group ISC plus its t-statistic.
+      The components within paratheses in the -model specifications are R 
+      notations for random effects.
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC -jobs 12                    \
+              -model  '1+(1|Subj1)+(1|Subj2           \
+              -dataTable                              \
+              Subj1   Subj2  InputFile                \
+              s1       s2    s1_s2+tlrc               \
+              s1       s3    s1_s3+tlrc               \
+              s1       s4    s1_s4+tlrc               \
+              s1       s5    s1_s5+tlrc               \
+              s1       s6    s1_s6+tlrc               \
+              s1       s7    s1_s7+tlrc               \
+              ... 
+              s2       s3    s2_s3+tlrc               \
+              s2       s4    s2_s4+tlrc               \
+              s2       s5    s2_s5+tlrc               \
+              ...                                   
+       
+    
+    Example 2 --- ISC analysis with two groups (G1 and G2). Three ISCs can be
+      inferred at the population level, G11 (ISC among subjects within the first
+      group G1), G22 (ISC among subjects within the second group G2), and G12 (ISC
+      between subjects in the first group G1 and those in the second group G2). The 
+      research interest can be various comparisons among G11, G22 and G12, and this
+      is the reason the group column 'grp' is coded with three types of population
+      ISC: G11, G22 and G12. By default each factor (categorical variable) is 
+      internally quantified in the model using deviation coding with alphabetically
+      the last level as the reference. Notice the semi-esoteric weights for those
+      comparisons with -gltCode: the first weight corresponds to the intercept in 
+      the model, which is the average effect across all the factor levels (and
+      corresponds to the zero value of a quantitative variable if present). If dummy 
+      coding is preferred, check out the next script below. The components within 
+      paratheses in the -model specifications are R notations for random effects. 
+      Here is a good reference about factor coding strategies:
+      https://stats.idre.ucla.edu/r/library/r-library-contrast-coding-systems-for-categorical-variables/
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC2a -jobs 12                \
+              -model  'grp+(1|Subj1)+(1|Subj2)'     \
+              -gltCode ave     '1 0 -0.5'           \
+              -gltCode G11     '1 1 0'              \
+              -gltCode G12     '1 0 1'              \
+              -gltCode G22     '1 -1 -1'            \
+              -gltCode G11vG22 '0 2 1'              \
+              -gltCode G11vG12 '0 1 -2'             \
+              -gltCode G12vG22 '0 1 2'              \
+              -gltCode ave-G12 '0 0 -1.5'           \
+              -dataTable                            \
+              Subj1 Subj2    grp      InputFi       \
+              s1     s2      G11      s1_2+tlrc     \
+              s1     s3      G11      s1_3+tlrc     \
+              s1     s4      G11      s1_4+tlrc     \
+              ...	         
+              s1     s25     G12      s1_25+tlr     \
+              s1     s26     G12      s1_26+tlr     \
+              s1     s27     G12      s1_26+tlr     \
+              ... 	         
+              s25    s26     G22     s25_26+tlr     \
+              s25    s27     G22     s25_27+tlr     \
+              s25    s48     G22     s51_28+tlr     \
+             ...
+    
+      The above script is equivalent to the one below. The only difference is that
+      we force 3dISC to adopt dummy coding by adding a zero in the -model
+      specification, which makes the weight coding much more intuitive. In this
+      particular case, the three weights are associated with the three
+      categories, G11, G12 and G22 (no intercept is assumed in the model as
+      requested with the zero (0) in the model specifications).
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC2b -jobs 12                  \
+              -model  '0+grp+(1|Subj1)+(1|Subj2)'     \
+              -gltCode ave     '0.5 0 0.5'            \
+              -gltCode G11     '1 0  0'               \
+              -gltCode G12     '0 1 0'                \
+              -gltCode G22     '0 0 1'                \
+              -gltCode G11vG22 '1 0 -1'               \
+              -gltCode G11vG12 '1 -1 0'               \
+              -gltCode G12vG22 '0 1 -1'               \
+              -gltCode ave-G12 '0.5 -1 0.5'           \
+              -dataTable                              \
+              Subj1 Subj2    grp      InputFile       \
+              s1     s2      G11      s1_2+tlrc       \
+              s1     s3      G11      s1_3+tlrc       \
+              s1     s4      G11      s1_4+tlrc       \
+              ...	         
+              s1     s25     G12      s1_25+tlr       \
+              s1     s26     G12      s1_26+tlr       \
+              s1     s27     G12      s1_26+tlr       \
+              ... 	         
+              s25    s26     G22     s25_26+tlr       \
+              s25    s27     G22     s25_27+tlr       \
+              s25    s48     G22     s51_28+tlr       \
+             ...
+      
+      There is a third way to analyze this same dataset if we are NOT
+      interested in the between-group ISC, G12. First, we adopt deviation
+      coding for the two groups by replacing two groups G1 and G2 with 0.5 and 
+      -0.5. Then add up the two values for each row (each subject pair), 
+      resulting in three possible values of 1, -1 and 0. Put those three values 
+      in the group column in the data table.
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC2c -jobs 12                       \
+              -model  'grp+(1|Subj1)+(1|Subj2)'            \
+              -qVars   grp                                 \
+              -gltCode ave     '1 0'                       \
+              -gltCode G11vG22 '0 1'                       \
+              -gltCode G11     '1 0.5'                     \
+              -gltCode G22     '1 -0.5'                    \
+              -dataTable                                   \
+              Subj1 Subj2    grp      InputFile            \
+              s1     s2       1      s1_2+tlrc             \
+              s1     s3       1      s1_3+tlrc             \
+              s1     s4       1      s1_4+tlrc             \
+              ...	          
+              s1     s25      0      s1_25+tlr             \
+              s1     s26      0      s1_26+tlr             \
+              s1     s27      0      s1_26+tlr             \
+              ... 	          
+              s25    s26     -1     s25_26+tlr             \
+              s25    s27     -1     s25_27+tlr             \
+              s25    s48     -1     s51_28+tlr             \
+              ...
+         
+    
+    Example 3 --- ISC analysis for one group of subjects. The only difference
+      from Example 1 is that we want to add an explanatory variable 'Age'. 
+      Before the age values are incoporated in the data table, do two things:
+      1) center the age by subtracting the cener (e.g., overall mean) from each 
+      subject's age, and 2) for each subject pair (each row in the data table)
+      add up the two ages (after centering). The components within paratheses 
+      in the -model specifications are R notations for random effects.
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC3 -jobs 12                       \
+              -model  'Age+(1|Subj1)+(1|Subj2)'           \
+              -qVars   Age                                \
+              -gltCode ave     '1 0'                      \
+              -gltCode Age     '0 1'                      \
+              -dataTable                                  \
+              Subj1   Subj2  Age  InputFile               \
+              s1       s2    2   s1_s2+tlrc               \
+              s1       s3    5   s1_s3+tlrc               \
+              s1       s4    -4  s1_s4+tlrc               \
+              s1       s5    3   s1_s5+tlrc               \
+              s1       s6    -2  s1_s6+tlrc               \
+              s1       s7    -1  s1_s7+tlrc               \
+              ... 		    
+              s2       s3    2   s2_s3+tlrc               \
+              s2       s4    4   s2_s4+tlrc               \
+              s2       s5    -5  s2_s5+tlrc               \
+             ...
+         
+    
+    Example 4 --- ISC analysis with two groups of subject (Sex: females and males)
+      plus a quantitative explanatory variable (Age). We are going to combine the
+      modeling strategy in the third analysis of Example 2 with Example 3. In 
+      addition, we consider the interaction between Sex and Age by adding their
+      product as another column (called 'SA' in the data table). The components 
+      within paratheses in the -model specifications are R notations for random 
+      effects.
+    
+    -------------------------------------------------------------------------
+        3dISC -prefix ISC2c -jobs 12                          \
+              -model  'Sex+Age+SA+(1|Subj1)+(1|Subj2)'        \
+              -qVars  'Sex,Age,SA'                            \
+              -gltCode ave       '1   0  0  0'                \
+              -gltCode G11vG22   '0   1  0  0'                \
+              -gltCode G11       '1  0.5 0  0'                \
+              -gltCode G22       '1 -0.5 0  0'                \
+              -gltCode Age       '0   0  1  0'                \
+              -gltCode Age1vAge2 '0   0  0  1'                \
+              -gltCode Age1      '0   0  1  0.5'              \
+              -gltCode Age2      '0   0  1 -0.5'              \
+              -dataTable                                      \
+              Subj1 Subj2    Sex Age SA     InputFile         \
+              s1     s2       1  2   2    s1_2+tlrc           \
+              s1     s3       1  5   5    s1_3+tlrc           \
+              s1     s4       1  -4 -4    s1_4+tlrc           \
+              ...	                    
+              s1     s25      0  -2  0    s1_25+tlr           \
+              s1     s26      0  -1  0    s1_26+tlr           \
+              s1     s27      0   3  0    s1_26+tlr           \
+              ... 	                    
+              s25    s26     -1  4  -4    s25_26+tlr          \
+              s25    s27     -1  -5  5    s25_27+tlr          \
+              s25    s48     -1  2  -2    s51_28+tlr          \
+             ...
+         
+    
+    Options in alphabetical order:
+    ------------------------------
+    
+       -IF var_name: var_name is used to specify the column name that is designated for
+            input files of effect estimate. The default (when this option is not invoked
+            is 'InputFile', in which case the column header has to be exactly as 'InputFile'
+            This input file for effect estimates has to be the last column.
+    
+       -Rio: Use R's io functions. The alternative is -cio.
+    
+       -Subj1 var_name: var_name is used to specify the column name that is designated as
+            as the first measuring entity variable (usually subject). This option,
+            combined with the another option '-Subj2', forms a pair of two subjects;
+            the order between the two subjects does not matter. The default (when
+            the option is not invoked) is 'Subj1', in which case the column header has
+            to be exactly as 'Subj1'.
+    
+       -Subj2 var_name: var_name is used to specify the column name that is designated as
+            as the first measuring entity variable (usually subject). This option,
+            combined with the another option '-Subj1', forms a pair of two subjects;
+            the order between the two subjects does not matter. The default (when
+            the option is not invoked) is 'Subj2', in which case the column header has
+            to be exactly as 'Subj1'.
+    
+       -cio: Use AFNI's C io functions, which is default. Alternatively -Rio
+             can be used.
+    
+       -dataTable TABLE: List the data structure with a header as the first line.
+    
+             NOTE:
+    
+             1) This option has to occur last in the script; that is, no other
+             options are allowed thereafter. Each line should end with a backslash
+             except for the last line.
+    
+             2) The table should contain at least three columns, two of which are
+             for the two subjects in each pair, 'Subj1' and 'Subj2'. These two columns
+             code the labels of the two subjects involved
+             for each ISC file that is listed in the column 'InputFile'. The order of
+             the columns does not matter. Any subject-level explanatory variables
+             (e.g., age, sex, etc.) can be
+             specified as columns in the table. Each row should contain only one
+             ISC file in the table of long format (cf. wide format) as defined in R.
+             The level labels of a factor should contain at least
+             one character. Input files can be in AFNI, NIfTI or surface format.
+             AFNI files can be specified with sub-brick selector (square brackets
+             [] within quotes) specified with a number or label.
+    
+             3) It is fine to have variables (or columns) in the table that are
+             not modeled in the analysis.
+    
+             4) The context of the table can be saved as a separate file, e.g.,
+             called table.txt. Do not forget to include a backslash at the end of
+             each row. In the script specify the data with '-dataTable @table.txt'.
+             This option is useful: (a) when there are many input files so that
+             the program complains with an 'Arg list too long' error; (b) when
+             you want to try different models with the same dataset.
+    
+       -dbgArgs: This option will enable R to save the parameters in a
+             file called .3dISC.dbg.AFNI.args in the current directory
+              so that debugging can be performed.
+    
+       -gltCode label weights: Specify the label and weights of interest. The
+           weights should be surrounded with quotes. 
+    
+       -help: this help message
+    
+       -jobs NJOBS: On a multi-processor machine, parallel computing will speed 
+             up the program significantly.
+             Choose 1 for a single-processor computer.
+    
+       -mask MASK: Process voxels inside this mask only.
+              Default is no masking.
+    
+       -model FORMULA: Specify the model structure for all the variables. The
+             expression FORMULA with more than one variable has to be surrounded
+             within (single or double) quotes. Variable names in the formula
+             should be consistent with the ones used in the header of -dataTable.
+             In the ISC context the simplest model is "1+(1|Subj1)+(1|Subj2)"in
+             while the random effect from each of the two subjects in a pair is
+             symmetrically incorporated in the model. Each random-effects factor is
+             specified within paratheses per formula convention in R. Any
+             effects of intereste and confounding variables (quantitative or
+             categorical variables) can be added as fixed effects without paratheses.
+    
+       -prefix PREFIX: Output file name. For AFNI format, provide prefix only,
+             with no view+suffix needed. Filename for NIfTI format should have
+             .nii attached (otherwise the output would be saved in AFNI format).
+    
+       -qVarCenters VALUES: Specify centering values for quantitative variables
+             identified under -qVars. Multiple centers are separated by 
+             commas (,) without any other characters such as spaces and should
+             be surrounded within (single or double) quotes. The order of the
+             values should match that of the quantitative variables in -qVars.
+             Default (absence of option -qVarsCetners) means centering on the
+             average of the variable across ALL subjects regardless their
+             grouping. If within-group centering is desirable, center the
+             variable YOURSELF first before the values are fed into -dataTable.
+    
+       -qVars variable_list: Identify quantitative variables (or covariates) with
+             this option. The list with more than one variable has to be
+             separated with comma (,) without any other characters such as
+             spaces and should be surrounded within (single or double) quotes.
+              For example, -qVars "Age,IQ"
+             WARNINGS:
+             1) Centering a quantitative variable through -qVarsCenters is
+             very critical when other fixed effects are of interest.
+             2) Between-subjects covariates are generally acceptable.
+             However EXTREME caution should be taken when the groups
+             differ substantially in the average value of the covariate.
+             
+    
+       -r2z: This option performs Fisher transformation on the response variable
+             (input files) if it is correlation value. Do not invoke the option
+             if the transformation has already been applied.
+    
+       -show_allowed_options: list of allowed options

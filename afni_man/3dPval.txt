@@ -1,0 +1,15 @@
+
+    Usage: 3dPval [options] dataset
+    
+    * Converts a dataset statistical sub-bricks to p-values.
+    * Sub-bricks that are not marked as statistical volumes are unchanged.
+    * However, all output volumes will be converted to float format!
+    * A quick hack for Isaac, by Zhark the Probabilistic [26 Jun 2015].
+    
+    Options:
+    =======
+     -zscore     = Convert to a z-score instead
+     -prefix p   = Prefix name for output file
+    
+    
+    ++ Compile date = Nov 22 2019 {AFNI_19.3.14:linux_ubuntu_16_64}

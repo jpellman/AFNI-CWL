@@ -1,0 +1,28 @@
+
+    
+    More helpful helpfile description coming (some day...)
+    
+    This is just a helper script for other things.
+    
+    written by PA Taylor, modelled heavily on RW Cox's '@snapshot_volreg'
+    script
+    
+    # --------------------------------------------------------------------
+    
+
+COMMAND OPTIONS
+===============
+
+.. code-block:: none
+
+    
+    -hview
+    -help
+    -ver
+    -ulay
+    -olay
+    -prefix
+    -box_focus_slices
+    -montgap
+    -montcolor
+    -no_clean

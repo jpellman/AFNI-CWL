@@ -1,0 +1,14 @@
+
+    Usage: demoExpt.py [options]
+    
+    AFNI real-time demo receiver with demo visualization.
+    
+    Options:
+      -h, --help            show this help message and exit
+      -d, --debug           enable debugging output
+      -v, --verbose         enable verbose output
+      -p TCP_PORT, --tcp_port=TCP_PORT
+                            TCP port for incoming connections
+      -S, --show_data       display received data in terminal if this option is
+                            specified
+      -w, --swap            byte-swap numerical reads if set

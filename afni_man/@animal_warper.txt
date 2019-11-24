@@ -1,0 +1,206 @@
+
+    
+    Script to align a subject structural data to a template and invert the
+    warps to compute the template and segmentation in the subject's
+    original, native space.
+    
+    This program uses basic AFNI commands to compute affine and nonlinear
+    alignments. The program works by first aligning centers of the subject
+    to that of the template. Affine and nonlinear alignment follow. The 
+    inverse warp is computed to bring the template and atlas segmentation
+    into the center-shifted grid. Skullstripping is provided by masking 
+    with the template. Finally, the grids are adjusted back to the
+    original center. Surfaces are made for all the atlas regions and for
+    a transformed copy of the template dataset.
+    
+
+Usage Example
+=============
+
+.. code-block:: none
+
+    
+        tcsh @animal_warper -input macaque1+orig        \
+          -base ../NMT.nii.gz                           \
+          -atlas atlas_dir/D99_atlas_1.2a_al2NMT.nii.gz \
+          -outdir aligned_data
+       
+       Note only the input dset and template_dset are required. If no
+       segmentation is given, then only the alignment steps are performed.
+    
+
+Options
+=======
+
+.. code-block:: none
+
+    
+        -input dset         :required input dataset to align to template
+    
+        -base  base_dataset :required template. Can be in a standard AFNI 
+                             location or fully specified path. 
+                             Note, if the template has no skull, then a
+                             masked (skullstripped) version of the input
+                             is produced in the output
+    
+        -atlas atlas_dataset :atlas can also be in a standard AFNI location 
+                             or fully specified
+    
+        -outdir outputdir   :create new directory and do all processing there.
+                             Default is template_align
+    
+        -template_prefix templatename 
+                            :select name for template and segmentation
+                             output Defaults to D99, NMT or template for
+                             template output and D99 or atlas for
+                             segmentation output.  Uses template space of
+                             template if available in template header
+    
+        -cost xxx           :choose a cost function for affine and nonlinear
+                             alignment. The same or similar cost function will
+                             be used for both alignments. The cost functions
+                             are listed in the help for 3dAllineate and 3dQwarp.
+                             Cost functions, like lpa+ZZ for 3dAllineate, are
+                             not available in 3dQwarp, so the "+ZZ" part is
+                             removed, and lpa would be used in that case for
+                             3dQwarp's nonlinear warping cost function. The
+                             default cost function is lpa+ZZ for affine
+                             warping (via align_epi_anat.py and 3dAllineate)
+                             and a clipped Pearson correlation for nonlinear
+                             warping (via auto_warp.py and 3dQwarp)
+    
+        -template_followers dset1 dset2 ...
+                            :warp related datasets back to native space
+    
+        -seg_followers segdset1 segdset2 ...
+                            :warp related datasets back to native space
+                             
+        -maxlev nn          :maximum level for nonlinear warping. Determines
+                             neighborhood size that is searched. See 3dQwarp
+                             help for information on maxlev. Default is 11.
+                             Use smaller values for testing
+    
+        -no_surfaces        :do not make surfaces for atlas regions in native
+                             space. Default is to create a surface directory
+                             with surfaces of each region in native space
+    
+        -align_type         :provide alignment only to specified level
+                             (rigid,rigid_equiv,affine,all)
+                             rigid - align using rotation and translation
+                             rigid_equiv - compute alignment with full affine
+                                but apply only the rigid parameters.
+                                This is usually preferred over the rigid body
+                                alignment because it handles different sizes
+                                better. The purpose here is to put data into
+                                approximately the same position as the template
+                                (AC-PC, axialized, ...)
+                             affine - full affine, 12 parameters
+                                rotation, translation, shearing and scaling
+                             all - go through affine and nonlinear warps (Default)
+                             Note, any option other than all will forego the
+                             reverse warps for now. You may restart and reuse
+                             existing warp transformations with the -ok_to_exist
+                             option
+    
+        -feature_size mm    :set size in mm for affine alignment. Use about 0.1
+                             for mouse, 0.5 for rat
+    
+        -supersize          :allow for up to 50% size difference between subject
+                             and template
+    
+        -keep_temp          :keep temporary files including awpy directory and 
+                             other intermediate datasets
+    
+        -ok_to_exist        :reuse and do not overwrite existing datasets.
+                             This option is used for faster restarts or with
+                             limited alignment options 
+    
+
+Comments
+========
+
+.. code-block:: none
+
+    
+        @animal_warper provides multiple outputs to assist in registering your
+        anatomicals and associated MRI data to the template:
+    
+        Subject scans registered to the template
+       	+ mydset_shft.nii.gz - dataset center aligned to the template center
+       	+ mydset_shft_al2std.nii.gz - dataset affine aligned to the template
+       	+ mydset_shft_aff.nii.gz - dataset affine aligned to the template
+                                       and on the template grid
+       	+ mydset_warp2std.nii.gz - dataset nonlinearly warped to the template
+    
+        Registration datasets for alignment to template
+       	+ mydset_composite_linear_to_template.1D** - combined affine 
+                                   transformations to the template
+       	+ mydset_shft_WARP.nii.gz - warp deformations to the template from
+                                    nonlinear alignment only
+    
+        Registration datasets for Template alignment to Subject
+       	+ mydset_composite_linear_to_template_inv.1D** - inverse of 
+                                  mydset_composite_linear_to_template.1D
+       	+ mydset_shft_WARPINV.nii.gz - inverse of mydset_shft_WARP.nii.gz
+    
+        Atlas aligned to Subject (Optional - only if atlas provided)
+       	+ seg_in_mydset.nii.gz - atlas segmentation aligned to native scan
+    
+        Template aligned_to Subject
+        + template_in_mydset.nii.gz** - template (e.g. NMT,D99) aligned 
+          to native scan
+    
+        Text description of output
+        + animal_outs.txt - list of important datasets and transforms in
+                            output directory
+         
+        ***-NOTE: @animal_warper is part of the AFNI software package  ***
+        Here all occurrences of mydset in the output file names would be replaced
+           with the name of your dataset. For NMT and D99 templates, the output
+           will contain NMT or D99 instead of template
+    
+    
+
+QC images
+=========
+
+.. code-block:: none
+
+    
+    The following quality control (QC) images are automatically generated
+    during processing, to help with speedy checking of processing.  In
+    each case, there are three sets of montages (one for sag, cor and axi
+    views) and a copy of the colorbar used (same prefix as file name,
+    *.jpg).  Additionally, there is also a *.txt file of ranges of values
+    related to the ulay and olay, which might be useful for QC or
+    figure-generation.
+    
+    Inside the output directory is a subdirectory called QC/ that contains
+    the following semi-cryptically named files:
+    
+      qc_00_e_temp+wrpd_inp.* 
+        [ulay] edges of the template (in template space)
+        [olay] warped input dset
+    
+      qc_01_e_wrpd_temp+orig_inp.*
+        [ulay] edges of the template (warped to orig space)
+        [olay] original input dset 
+    
+      qc_02_orig_inp+mask.*
+        [ulay] original input dset (in orig space)
+        [olay] estimated mask, showing skullstripping
+    
+      qc_03_ee_orig_inp+wrpd_atlas.*
+        [ulay] 'edge enhanced' original input dset (in orig space)
+        [olay] warped atlas dset
+    
+    
+
+References
+==========
+
+.. code-block:: none
+
+    
+    This script is derived from macaque_align.csh and NMT_subject_align.csh,
+     scripts distributed with the D99 macaque and the NMT macaque template

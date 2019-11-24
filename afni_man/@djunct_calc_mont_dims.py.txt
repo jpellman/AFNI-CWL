@@ -1,0 +1,6 @@
+
+    ('++ Command line:', ['/home/afniHQ/afni.build/pub.dist/bin/linux_ubuntu_16_64/@djunct_calc_mont_dims.py', '-help'])
+    
+    Just a simple helper function for the fat_proc* scripts.  
+    
+    Nuthin' to see here, folks!

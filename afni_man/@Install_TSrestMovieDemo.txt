@@ -1,0 +1,4 @@
+
+    Installs and runs demo script for making a resting-state movie
+    demo with @CreateMovie.
+    After the archive Suma_TSrestMovieDemo is downloaded and unpacked,

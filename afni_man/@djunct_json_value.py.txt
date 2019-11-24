@@ -1,0 +1,6 @@
+
+     
+    Subsidiary of apqc*py, not really a program deserving a
+    help message.
+    
+    Just a little, *tiny* wafer...

@@ -1,0 +1,3 @@
+
+    A simple openGL test program using motif widgets.
+    If it does not run, then SUMA certainly won't.

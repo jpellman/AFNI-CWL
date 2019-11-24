@@ -1,0 +1,6 @@
+
+    Traceback (most recent call last):
+      File "/home/afniHQ/afni.build/pub.dist/bin/linux_ubuntu_16_64/fat_lat_csv.py", line 17, in <module>
+        import lib_fat_Rfactor as FR
+      File "/home/afniHQ/afni.build/pub.dist/bin/linux_ubuntu_16_64/lib_fat_Rfactor.py", line 10, in <module>
+        from rpy2.robjects import r

@@ -1,0 +1,4 @@
+
+    Usage: 3dCountSpikes dataset
+    
+    Does this program do something useful?
